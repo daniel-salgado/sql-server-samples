@@ -1,0 +1,17 @@
+# Use the official SQL Server image for Linux
+FROM mcr.microsoft.com/azure-sql-edge
+
+# Set environment variables for SQL Server
+ENV MSSQL_PID=Developer \
+    MSSQL_SA_PASSWORD=S41g@d0!!! \
+    ACCEPT_EULA=Y
+
+# Expose SQL Server port
+EXPOSE 1433
+
+
+# Start SQL Server on container startup
+CMD [ "/opt/mssql/bin/sqlservr" ]
+
+#docker run -d -p 1433:1433 --name mssql -v sql_data_volume:/var/opt/mssql/data img_mssql
+#docker run --hostname=8bdede194f16 --user=mssql --mac-address=02:42:ac:11:00:02 --env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin --env=MSSQL_RPC_PORT=135 --env=CONFIG_EDGE_BUILD=1 --env=PAL_BOOT_WITH_MINIMAL_CONFIG=1 --env=PAL_ENABLE_PAGE_ALIGNED_PE_FILE_CREATION=1 --env=LD_LIBRARY_PATH=/opt/mssql/lib --env=MSSQL_PID=Developer --env=MSSQL_SA_PASSWORD=S41g@d0!!! --env=ACCEPT_EULA=Y --volume=sql_data_volume:/var/opt/mssql/data --volume=/var/opt/mssql-extensibility --volume=/var/opt/mssql-extensibility/data --volume=/var/opt/mssql-extensibility/log -p 1433:1433 --restart=no --label='com.azure.dev.image.build.sourceversion=27968dae20b550ae4cfbd3692ee5bee8d0872ad2' --label='com.azure.dev.image.system.teamfoundationcollectionuri=https://dev.azure.com/tigerdid/' --label='com.microsoft.product=Microsoft SQL Server' --label='com.microsoft.version=15.0.2000.1574' --label='org.opencontainers.image.ref.name=ubuntu' --label='org.opencontainers.image.version=18.04' --label='vendor=Microsoft' --runtime=runc -d img_mssql
