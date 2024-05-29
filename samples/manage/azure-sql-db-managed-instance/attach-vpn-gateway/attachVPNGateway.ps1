@@ -19,7 +19,7 @@ if ($clientCertificatePassword -eq '' -or ($null -eq $clientCertificatePassword)
 
 function VerifyPSVersion {
     Write-Host "Verifying PowerShell version."
-    if ($PSVersionTable.PSEdition -eq "Desktop") {
+    if ($PSVersionTable.PSEdition -eq "Desktop" -or $PSVersionTable.PSEdition -eq "Core" ) {
         if (($PSVersionTable.PSVersion.Major -ge 6) -or
             (($PSVersionTable.PSVersion.Major -eq 5) -and ($PSVersionTable.PSVersion.Minor -ge 1))) {
             Write-Host "PowerShell version verified." -ForegroundColor Green
@@ -163,6 +163,12 @@ function CalculateNextAddressPrefix {
         }
     }
     $startIPAddress += 1
+    # if crossing a block boundary, round to the next possible start for the given suffix size
+    if (($startIPAddress -shr $prefixLength) -ne 0) {
+        $suffixLength = 32 - $prefixLength
+        $startIPAddress = (($startIPAddress -shr $suffixLength) + 1) -shl $suffixLength
+    }
+    # convert and return
     $addressPrefixResult = (ConvertUInt32ToIPAddress $startIPAddress) + "/" + $prefixLength
     Write-Host "Using address prefix $addressPrefixResult." -ForegroundColor Green
     return $addressPrefixResult
@@ -219,7 +225,7 @@ function CreateCerificateOpenSsl() {
 
 function CreateCertificate() {
     Write-Host "Creating certificate."
-    if ($PSVersionTable.PSEdition -eq "Desktop") {
+    if ($PSVersionTable.PSEdition -eq "Desktop" -or $PSVersionTable.PSEdition -eq "Core" ) {
         return CreateCerificateWindows
     }
     else {
@@ -239,7 +245,7 @@ $gatewaySubnetName = "GatewaySubnet"
 
 If ($false -eq $subnets.Contains($gatewaySubnetName)) {
     Write-Host "$gatewaySubnetName is not one of the subnets in $subnets" -ForegroundColor Yellow
-    $gatewaySubnetPrefix = CalculateNextAddressPrefix $virtualNetwork 28
+    $gatewaySubnetPrefix = CalculateNextAddressPrefix $virtualNetwork 27
     Write-Host "Creating subnet $gatewaySubnetName ($gatewaySubnetPrefix) in the virtual network ..." -ForegroundColor Green
 
     $virtualNetwork.AddressSpace.AddressPrefixes.Add($gatewaySubnetPrefix)
