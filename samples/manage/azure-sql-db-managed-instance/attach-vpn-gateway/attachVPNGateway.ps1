@@ -6,15 +6,10 @@ $environmentName = $parameters['environmentName']
 $resourceGroupName = $parameters['resourceGroupName']
 $virtualNetworkName = $parameters['virtualNetworkName']
 $certificateNamePrefix = $parameters['certificateNamePrefix']
-$clientCertificatePassword = $parameters['clientCertificatePassword'] #used only when certificates are created using openssl
 
 if ($environmentName -eq '' -or ($null -eq $environmentName)) {
     $environmentName = 'AzureCloud'
     Write-Host "Environment: AzureCloud." -ForegroundColor Green
-}
-
-if ($clientCertificatePassword -eq '' -or ($null -eq $clientCertificatePassword)) {
-    $clientCertificatePassword = 'S0m3Str0nGP@ssw0rd'
 }
 
 function VerifyPSVersion {
@@ -164,9 +159,12 @@ function CalculateNextAddressPrefix {
     }
     $startIPAddress += 1
     # if crossing a block boundary, round to the next possible start for the given suffix size
-    if (($startIPAddress -shr $prefixLength) -ne 0) {
-        $suffixLength = 32 - $prefixLength
-        $startIPAddress = (($startIPAddress -shr $suffixLength) + 1) -shl $suffixLength
+    $suffixLength = 32 - $prefixLength
+    $mask = (1 -shl $suffixLength) - 1
+    if (($startIPAddress -band $mask) -ne $startIPAddress) {
+        $x = $startIPAddress -shr $suffixLength
+        $x += 1
+        $startIPAddress = $x -shl $suffixLength
     }
     # convert and return
     $addressPrefixResult = (ConvertUInt32ToIPAddress $startIPAddress) + "/" + $prefixLength
@@ -213,9 +211,7 @@ function CreateCerificateOpenSsl() {
     ipsec pki --pub --in "$($dn)Key.pem" --outform pem > "$($dn)PubKey.pem"
     ipsec pki --issue --in "$($dn)PubKey.pem" --cacert caCert.pem --cakey caKey.pem --dn "CN=$($dn)" --san $dn --flag clientAuth --outform pem > "$($dn)Cert.pem"
 
-    openssl pkcs12 -in "$($dn)Cert.pem" -inkey "$($dn)Key.pem" -certfile caCert.pem -export -out "$($dn).p12" -password "pass:$($clientCertificatePassword)"
-    #openssl pkcs12 -in "$($dn).p12" -password "pass:$($clientCertificatePassword)" -nocerts -out "$($dn)PrivateKey.pem" -nodes
-    #openssl pkcs12 -in "$($dn).p12" -password "pass:$($clientCertificatePassword)" -nokeys -out "$($dn)PublicCert.pem" -nodes
+    openssl pkcs12 -in "$($dn)Cert.pem" -inkey "$($dn)Key.pem" -certfile caCert.pem -export -out "$($dn).p12" --certpbe NONE -passout pass:
 
     $publicRootCertData = openssl x509 -in caCert.pem -outform pem
     $publicRootCertData = $publicRootCertData -replace "-----BEGIN CERTIFICATE-----", ""
